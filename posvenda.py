@@ -28,10 +28,18 @@ def arquivo_muito_grande(e):
     return Response("Arquivo muito grande. O limite para anexos é de 12 MB.", status=413)
 
 def conectar_planilha():
-    if not os.path.exists("credenciais.json") or os.path.getsize("credenciais.json") == 0:
-        raise Exception("O arquivo credenciais.json está vazio ou não existe.")
+    credenciais_json_str = os.environ.get("GOOGLE_CREDENTIALS_JSON")
     
-    credenciais = Credentials.from_service_account_file("credenciais.json", scopes=ESCOPOS)
+    if credenciais_json_str:
+        # Se estiver no Render, carrega a credencial direto da Variável de Ambiente
+        cred_dict = json.loads(credenciais_json_str)
+        credenciais = Credentials.from_service_account_info(cred_dict, scopes=ESCOPOS)
+    else:
+        # Se estiver rodando localmente no PC, lê o arquivo físico credenciais.json
+        if not os.path.exists("credenciais.json") or os.path.getsize("credenciais.json") == 0:
+            raise Exception("O arquivo credenciais.json está vazio ou não existe, e a variável de ambiente não foi configurada.")
+        credenciais = Credentials.from_service_account_file("credenciais.json", scopes=ESCOPOS)
+        
     cliente = gspread.authorize(credenciais)
     return cliente.open_by_key("1ipTMuRsJYA_yr0dWXgh1kBAgQppSNTOUm78dUJim8LE")
 
